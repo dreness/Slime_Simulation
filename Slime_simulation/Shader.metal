@@ -14,6 +14,16 @@ struct Particle{
     float angle;
 };
 
+struct CS_UNIFORM
+{
+    //float time;
+    //simd_float2 mouse;
+    float sensorDistance;
+    float sensorAngle;
+    int sensorSize;
+};
+
+
 float rand(int x, int y, int z)
 {
     int seed = x + y * 57 + z * 241;
@@ -54,9 +64,10 @@ kernel void clear_pass_func(texture2d<half, access::read_write> tex [[ texture(0
 }
 
 kernel void blur_pass_func(texture2d<half, access::read_write> tex [[ texture(0) ]],
+                           constant CS_UNIFORM &uniform [[ buffer(1) ]],
                             uint2 id [[ thread_position_in_grid ]]){
     half4 sum = 0;
-    int sensor_size = 1;
+    int sensor_size = uniform.sensorSize;
     for (int offset_x = -sensor_size; offset_x <= sensor_size; offset_x ++)
     {
         for (int offset_y = -sensor_size; offset_y <= sensor_size; offset_y ++)
@@ -74,9 +85,13 @@ kernel void blur_pass_func(texture2d<half, access::read_write> tex [[ texture(0)
     tex.write(color, id);
 }
 
+
+
 kernel void draw_dots_func(device Particle *particles [[ buffer(0) ]],
-                           texture2d<half, access::read_write> tex [[ texture(0) ]],
-                           uint id [[ thread_position_in_grid ]]){
+                           constant CS_UNIFORM &uniform [[ buffer(1) ]],
+                           uint id [[ thread_position_in_grid ]],
+                           texture2d<half, access::read_write> tex [[ texture(0) ]]
+                        ){
     
     float width = tex.get_width();
     float height = tex.get_height();
@@ -87,15 +102,18 @@ kernel void draw_dots_func(device Particle *particles [[ buffer(0) ]],
     float2 position = particle.position;
     float angle = particle.angle;
     
+    float sa = uniform.sensorAngle;
+    float sd = uniform.sensorDistance;
+    
     //MARK: ADD sensor code
     //ampiezza vedute
-    const float sensor_angle = M_PI_F/6;
+    const float sensor_angle = M_PI_F/sa;
     //capacità di cambiare direzione
     const float turn_angle = M_PI_F/15;
     //piccolo o grande
-    const int sensor_size = 1;
+    const int sensor_size = uniform.sensorSize;
     //lungimiranza
-    const uint sensor_distance = 10;
+    const uint sensor_distance = sd;
     //
     const float stear_randomnes = 1;
     int color1 = 2;

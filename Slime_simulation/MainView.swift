@@ -6,6 +6,15 @@ struct Particle{
     var angle: Float
 }
 
+struct CS_UNIFORM
+{
+    //var time: Float
+    //var mouse: simd_float2
+    var sensorDistance: Float
+    var sensorAngle: Float
+    var sensorSize: Int
+};
+
 class MainView: MTKView {
     
     @IBOutlet weak var txtDotCount: NSTextField!
@@ -22,12 +31,16 @@ class MainView: MTKView {
         return Float(self.bounds.width * 2)
     }
     
-    var particleCount: Int = 1
+    var particleCount: Int = 300000
     
     override func viewDidMoveToWindow() {
         txtDotCount.stringValue = String(particleCount)
         sldDotCount.floatValue = Float(particleCount)
     }
+    
+    var computeUniformsBuffer: MTLBuffer!
+    
+
     
     required init(coder: NSCoder) {
         super.init(coder: coder)
@@ -35,6 +48,7 @@ class MainView: MTKView {
         self.framebufferOnly = false
         
         self.device = MTLCreateSystemDefaultDevice()
+        self.preferredFramesPerSecond = 120
         
         self.commandQueue = device?.makeCommandQueue()
         
@@ -83,19 +97,35 @@ class MainView: MTKView {
         let w = clearPass.threadExecutionWidth
         let h = clearPass.maxTotalThreadsPerThreadgroup / w
         
+        // Create our uniform buffer, and fill it with an initial brightness of 1.0
+        var initialComputeUniforms = CS_UNIFORM(sensorDistance: 12.0, sensorAngle: 6.0, sensorSize: 2)
+ 
+        let computeUniformsBuffer = (device?.makeBuffer(bytes: &initialComputeUniforms, length: MemoryLayout<CS_UNIFORM>.stride * 2, options: [])!)!
+        
+  
+        
         var threadsPerThreadGroup = MTLSize(width: w, height: h, depth: 1)
         var threadsPerGrid = MTLSize(width: drawable.texture.width, height: drawable.texture.height, depth: 1)
         computeCommandEncoder?.dispatchThreads(threadsPerGrid, threadsPerThreadgroup: threadsPerThreadGroup)
 
         computeCommandEncoder?.setComputePipelineState(drawDotPass)
         computeCommandEncoder?.setBuffer(particleBuffer, offset: 0, index: 0)
+
+        computeCommandEncoder!.setBuffer(computeUniformsBuffer, offset: 0, index: 1)
+
+
+        //computeCommandEncoder?.setBuffer(computeUniformsBuffer, offset: 0, index: 0)
         threadsPerGrid = MTLSize(width: particleCount, height: 1, depth: 1)
         threadsPerThreadGroup = MTLSize(width: w, height: 1, depth: 1)
         computeCommandEncoder?.dispatchThreads(threadsPerGrid, threadsPerThreadgroup: threadsPerThreadGroup)
 
-//        computeCommandEncoder?.setComputePipelineState(blurPass)
-//        computeCommandEncoder?.setTexture(drawable.texture, index: 0)
-//        computeCommandEncoder?.dispatchThreads(threadsPerGrid, threadsPerThreadgroup: threadsPerThreadGroup)
+        computeCommandEncoder?.setComputePipelineState(blurPass)
+        computeCommandEncoder!.setBuffer(computeUniformsBuffer, offset: 0, index: 1)
+
+        computeCommandEncoder?.setTexture(drawable.texture, index: 1)
+        computeCommandEncoder?.dispatchThreads(threadsPerGrid, threadsPerThreadgroup: threadsPerThreadGroup)
+        
+
         
         computeCommandEncoder?.endEncoding()
         commandbuffer?.present(drawable)
