@@ -12,7 +12,10 @@ struct CS_UNIFORM
     //var mouse: simd_float2
     var sensorDistance: Float
     var sensorAngle: Float
+    var turnAngle: Float
     var sensorSize: Int
+    var blurColorThreshold: Float
+    var acc: Float
 };
 
 class MainView: MTKView {
@@ -28,7 +31,7 @@ class MainView: MTKView {
     var particleBuffer: MTLBuffer!
     
     var screenSize: Float {
-        return Float(self.bounds.width * 2)
+        return Float(self.bounds.width * NSScreen.main!.backingScaleFactor)
     }
     
     var particleCount: Int = 300000
@@ -98,7 +101,14 @@ class MainView: MTKView {
         let h = clearPass.maxTotalThreadsPerThreadgroup / w
         
         // Create our uniform buffer, and fill it with an initial brightness of 1.0
-        var initialComputeUniforms = CS_UNIFORM(sensorDistance: 12.0, sensorAngle: 6.0, sensorSize: 2)
+        var initialComputeUniforms = CS_UNIFORM(
+            sensorDistance: 6.0,
+            sensorAngle: 16.0,
+            turnAngle: 30.0,
+            sensorSize: 1,
+            blurColorThreshold: 0.15,
+            acc: 0.11
+        )
  
         let computeUniformsBuffer = (device?.makeBuffer(bytes: &initialComputeUniforms, length: MemoryLayout<CS_UNIFORM>.stride * 2, options: [])!)!
         

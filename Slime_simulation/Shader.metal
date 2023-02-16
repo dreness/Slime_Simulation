@@ -20,7 +20,10 @@ struct CS_UNIFORM
     //simd_float2 mouse;
     float sensorDistance;
     float sensorAngle;
+    float turnAngle;
     int sensorSize;
+    float blurColorThreshold;
+    float acc;
 };
 
 
@@ -78,7 +81,7 @@ kernel void blur_pass_func(texture2d<half, access::read_write> tex [[ texture(0)
     }
     
     half4 color = sum/((sensor_size*2 +1)*(sensor_size*2 +1));
-    if (abs(color.x) + abs(color.y) + abs(color.z) < 0.05)
+    if (abs(color.x) + abs(color.y) + abs(color.z) < uniform.blurColorThreshold)
     {
         //color = half4(0, 0, 0, 1);
     }
@@ -102,18 +105,15 @@ kernel void draw_dots_func(device Particle *particles [[ buffer(0) ]],
     float2 position = particle.position;
     float angle = particle.angle;
     
-    float sa = uniform.sensorAngle;
-    float sd = uniform.sensorDistance;
-    
     //MARK: ADD sensor code
     //ampiezza vedute
-    const float sensor_angle = M_PI_F/sa;
+    const float sensor_angle = M_PI_F/uniform.sensorAngle;
     //capacità di cambiare direzione
-    const float turn_angle = M_PI_F/15;
+    const float turn_angle = M_PI_F/uniform.turnAngle;
     //piccolo o grande
     const int sensor_size = uniform.sensorSize;
     //lungimiranza
-    const uint sensor_distance = sd;
+    const uint sensor_distance = uniform.sensorDistance;;
     //
     const float stear_randomnes = 1;
     int color1 = 2;
@@ -167,21 +167,20 @@ kernel void draw_dots_func(device Particle *particles [[ buffer(0) ]],
     //float random = rand(position.x, position.y, angle);
     random = cos(random * 3.1415);
     
-    const float acc = 0.41;
     if (left_sum > center_sum && left_sum > right_sum)
     {
         angle += turn_angle - turn_angle  * stear_randomnes * random;
         
-        position += (1 + left_sum * acc) * float2(cos(angle), sin(angle));
+        position += (1 + left_sum * uniform.acc) * float2(cos(angle), sin(angle));
     }else if (right_sum > center_sum && right_sum > left_sum)
     {
         angle -= turn_angle + turn_angle * stear_randomnes * random;
         
-        position += (1 + right_sum * acc) * float2(cos(angle), sin(angle));
+        position += (1 + right_sum * uniform.acc) * float2(cos(angle), sin(angle));
     }else{
         angle = angle + random * stear_randomnes * 0.1;
         
-        position += (1 + center_sum * acc) * float2(cos(angle), sin(angle));
+        position += (1 + center_sum * uniform.acc) * float2(cos(angle), sin(angle));
     }
     
     //position += float2(cos(angle), sin(angle));
