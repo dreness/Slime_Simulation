@@ -25,15 +25,10 @@ class MainView: MTKView {
     var updateUIVisibility: Bool! = false
     
     func toggleUI(uiVisible: Bool) {
-        if uiVisible == false {
-            sldDotCount.isHidden = true
-            txtDotCount.isHidden = true
-            updateButton.isHidden = true
-        } else {
-            sldDotCount.isHidden = false
-            txtDotCount.isHidden = false
-            updateButton.isHidden = false
-        }
+        sldDotCount.isHidden = uiVisible
+        txtDotCount.isHidden = uiVisible
+        updateButton.isHidden = uiVisible
+        self.uiVisible = !self.uiVisible
     }
     
     var commandQueue: MTLCommandQueue!
@@ -107,7 +102,6 @@ class MainView: MTKView {
         guard let drawable = self.currentDrawable else { return }
         
         if (updateUIVisibility == true) {
-            uiVisible = !uiVisible
             toggleUI(uiVisible: uiVisible)
             updateUIVisibility = false
         }
