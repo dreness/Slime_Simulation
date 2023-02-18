@@ -12,10 +12,7 @@ struct CS_UNIFORM
     //var mouse: simd_float2
     var sensorDistance: Float
     var sensorAngle: Float
-    var turnAngle: Float
     var sensorSize: Int
-    var blurColorThreshold: Float
-    var acc: Float
 };
 
 class MainView: MTKView {
@@ -128,10 +125,7 @@ class MainView: MTKView {
         var initialComputeUniforms = CS_UNIFORM(
             sensorDistance: 6.0,
             sensorAngle: 16.0,
-            turnAngle: 30.0,
-            sensorSize: 1,
-            blurColorThreshold: 0.15,
-            acc: 0.11
+            sensorSize: 1
         )
  
         let computeUniformsBuffer = (device?.makeBuffer(bytes: &initialComputeUniforms, length: MemoryLayout<CS_UNIFORM>.stride, options: [])!)!

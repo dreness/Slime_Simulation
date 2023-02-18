@@ -14,8 +14,8 @@
             filePath = "Slime_simulation/Shader.metal"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "110"
-            endingLineNumber = "110"
+            startingLineNumber = "107"
+            endingLineNumber = "107"
             landmarkName = "draw_dots_func(device Particle *particles [[ buffer(0) ]], constant CS_UNIFORM &amp;uniform [[ buffer(1) ]], uint id [[ thread_position_in_grid ]], texture2d&lt;half, access::read_write&gt; tex [[ texture(0) ]] )"
             landmarkType = "9">
          </BreakpointContent>
