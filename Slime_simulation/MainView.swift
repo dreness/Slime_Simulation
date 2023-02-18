@@ -22,6 +22,22 @@ class MainView: MTKView {
     
     @IBOutlet weak var txtDotCount: NSTextField!
     @IBOutlet weak var sldDotCount: NSSlider!
+    @IBOutlet weak var updateButton: NSButton!
+    
+    var uiVisible: Bool! = true
+    var updateUIVisibility: Bool! = false
+    
+    func toggleUI(uiVisible: Bool) {
+        if uiVisible == false {
+            sldDotCount.isHidden = true
+            txtDotCount.isHidden = true
+            updateButton.isHidden = true
+        } else {
+            sldDotCount.isHidden = false
+            txtDotCount.isHidden = false
+            updateButton.isHidden = false
+        }
+    }
     
     var commandQueue: MTLCommandQueue!
     var clearPass: MTLComputePipelineState!
@@ -34,8 +50,9 @@ class MainView: MTKView {
         return Float(self.bounds.width * NSScreen.main!.backingScaleFactor)
     }
     
-    var particleCount: Int = 300000
-    
+    var particleCount: Int = 200000
+    var initialComputeUniforms = CS_UNIFORM(sensorDistance: 34.0, sensorAngle: 10.0, sensorSize: 1)
+
     override func viewDidMoveToWindow() {
         txtDotCount.stringValue = String(particleCount)
         sldDotCount.floatValue = Float(particleCount)
@@ -60,11 +77,11 @@ class MainView: MTKView {
         let drawDotFunc = library?.makeFunction(name: "draw_dots_func")
         let blurFunc = library?.makeFunction(name: "blur_pass_func")
         
-        do{
+        do {
             clearPass = try device?.makeComputePipelineState(function: clearFunc!)
             drawDotPass = try device?.makeComputePipelineState(function: drawDotFunc!)
             blurPass = try device?.makeComputePipelineState(function: blurFunc!)
-        }catch let error as NSError{
+        } catch let error as NSError {
             print(error)
         }
         guard let drawable = self.currentDrawable else { return }
@@ -80,9 +97,10 @@ class MainView: MTKView {
             if c > 0 {
                 color =  SIMD4<Float>(Float.random(in: 0...1), Float.random(in: 0...1), 0 * Float.random(in: 0.8...1), 1)
             }
-            let particle = Particle(color: color,
-                                    position: Float.random(in: 0...0*(Float(min(h, w)/2) - 1)) * SIMD2<Float>(cos(a), sin(a)) + SIMD2<Float>(Float(w)/2, Float(h)/2),
-                                    angle: a +  0*Float.random(in: 0...3.1415) - 1 * 3.1415)
+            let particle = Particle(
+                color: color,
+                position: Float.random(in: 0...0*(Float(min(h, w)/2) - 1)) * SIMD2<Float>(cos(a), sin(a)) + SIMD2<Float>(Float(w)/2, Float(h)/2),
+                angle: a + 0*Float.random(in: 0...3.1415) - 1 * 3.1415)
             particles.append(particle)
         }
         particleBuffer = device?.makeBuffer(bytes: particles, length: MemoryLayout<Particle>.stride * particleCount, options: .storageModeManaged)
@@ -90,6 +108,12 @@ class MainView: MTKView {
     
     override func draw(_ dirtyRect: NSRect) {
         guard let drawable = self.currentDrawable else { return }
+        
+        if (updateUIVisibility == true) {
+            uiVisible = !uiVisible
+            toggleUI(uiVisible: uiVisible)
+            updateUIVisibility = false
+        }
         
         let commandbuffer = commandQueue.makeCommandBuffer()
         let computeCommandEncoder = commandbuffer?.makeComputeCommandEncoder()
@@ -110,7 +134,7 @@ class MainView: MTKView {
             acc: 0.11
         )
  
-        let computeUniformsBuffer = (device?.makeBuffer(bytes: &initialComputeUniforms, length: MemoryLayout<CS_UNIFORM>.stride * 2, options: [])!)!
+        let computeUniformsBuffer = (device?.makeBuffer(bytes: &initialComputeUniforms, length: MemoryLayout<CS_UNIFORM>.stride, options: [])!)!
         
   
         
@@ -143,14 +167,18 @@ class MainView: MTKView {
     }
     
     @IBAction func sldParticleCountUpdate(_ sender: NSSlider) {
-        txtDotCount.stringValue = String(Int(sender.floatValue))
+        if (Int(sender.floatValue) > 0) {
+            txtDotCount.stringValue = String(Int(sender.floatValue))
+        }
     }
     
     @IBAction func btnUpdate(_ sender: NSButton) {
-        particleCount = Int(txtDotCount.stringValue)!
-        sldDotCount.floatValue = Float(txtDotCount.stringValue)!
-        guard let drawable = self.currentDrawable else { return }
-        createParticles(h: drawable.texture.height, w: drawable.texture.width)
+        if (Int(txtDotCount.stringValue)! > 0) {
+            particleCount = Int(txtDotCount.stringValue)!
+            sldDotCount.floatValue = Float(txtDotCount.stringValue)!
+            guard let drawable = self.currentDrawable else { return }
+            createParticles(h: drawable.texture.height, w: drawable.texture.width)
+        }
     }
     
 }

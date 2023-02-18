@@ -753,8 +753,12 @@
                         <connections>
                             <outlet property="sldDotCount" destination="A3G-j8-YLm" id="TVP-gS-WDb"/>
                             <outlet property="txtDotCount" destination="P0x-cy-YOH" id="ZWC-xD-VgE"/>
+                            <outlet property="updateButton" destination="h0V-0U-jf4" id="YWC-EF-Ap7"/>
                         </connections>
                     </view>
+                    <connections>
+                        <outlet property="MainView" destination="m2S-Jp-Qdl" id="NGg-Cf-CoJ"/>
+                    </connections>
                 </viewController>
                 <customObject id="rPt-NT-nkU" userLabel="First Responder" customClass="NSResponder" sceneMemberID="firstResponder"/>
             </objects>
